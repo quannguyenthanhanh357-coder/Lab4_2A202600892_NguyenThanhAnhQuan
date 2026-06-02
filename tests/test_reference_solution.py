@@ -8,10 +8,10 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from solution.agent.graph import run_agent
-import solution.agent.graph as solution_graph
-from solution.utils.data_store import OrderDataStore
-from src.core.schemas import OrderLineInput
+from src.agent.graph import run_agent  # type: ignore
+import src.agent.graph as solution_graph  # type: ignore
+from src.utils.data_store import OrderDataStore  # type: ignore
+from src.core.schemas import OrderLineInput  # type: ignore
 
 
 def test_save_order_matches_expected_fixture(tmp_path: Path) -> None:

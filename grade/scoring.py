@@ -4,6 +4,7 @@ import argparse
 import importlib
 import json
 import sys
+import time
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,7 +14,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from src.core.llm import judge_answer_with_llm
+from src.core.llm import judge_answer_with_llm  # type: ignore
 
 ALLOWED_WEIGHT_KEYS = {"json_output", "tools", "llm_judge"}
 IGNORED_EXPECTED_KEYS = {"created_at"}
@@ -249,11 +250,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Grade saved JSON output for the order-agent lab")
     parser.add_argument("--module", default="solution.agent.graph")
     parser.add_argument("--cases", default=str(ROOT_DIR / "data" / "graded_cases.json"))
-    parser.add_argument("--provider", default="google", choices=["google", "ollama"])
+    parser.add_argument("--provider", default="google", choices=["google", "ollama", "openai"])
     parser.add_argument("--model-name", default=None)
     parser.add_argument("--today", default="2026-06-01")
     parser.add_argument("--pass-threshold", type=float, default=80.0)
-    parser.add_argument("--judge-provider", default=None, choices=["google", "ollama"])
+    parser.add_argument("--judge-provider", default=None, choices=["google", "ollama", "openai"])
     parser.add_argument("--judge-model-name", default=None)
     args = parser.parse_args()
 
@@ -268,21 +269,35 @@ def main() -> int:
 
     scores: list[CaseScore] = []
     for case in cases:
-        raw_result = module.run_agent(
-            case["query"],
-            provider=args.provider,
-            model_name=args.model_name,
-            today=args.today,
-        )
-        result = coerce_result(raw_result, query=case["query"], provider=args.provider, model_name=args.model_name)
-        scores.append(
-            grade_result(
-                result,
-                case,
-                judge_provider=effective_judge_provider,
-                judge_model_name=args.judge_model_name,
-            )
-        )
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                raw_result = module.run_agent(
+                    case["query"],
+                    provider=args.provider,
+                    model_name=args.model_name,
+                    today=args.today,
+                )
+                result = coerce_result(raw_result, query=case["query"], provider=args.provider, model_name=args.model_name)
+                scores.append(
+                    grade_result(
+                        result,
+                        case,
+                        judge_provider=effective_judge_provider,
+                        judge_model_name=args.judge_model_name,
+                    )
+                )
+                break
+            except Exception as e:
+                err_str = str(e).lower()
+                if "rate limit" in err_str or "429" in err_str or "too many requests" in err_str:
+                    if attempt < max_retries - 1:
+                        print(f"Rate limit hit! Sleeping for 15s before retry {attempt + 1}/{max_retries}...", file=sys.stderr)
+                        time.sleep(40)
+                    else:
+                        raise e
+                else:
+                    raise e
 
     summary = summarize_scores(scores)
     print(json.dumps(summary, indent=2, ensure_ascii=False))

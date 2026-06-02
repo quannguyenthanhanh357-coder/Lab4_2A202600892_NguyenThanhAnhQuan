@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Arena - Model Comparison</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f1117;
+            --panel-bg: rgba(255, 255, 255, 0.03);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f1f3f5;
+            --text-secondary: #a1a1aa;
+            --accent-primary: #3b82f6;
+            --accent-hover: #2563eb;
+            --gemini-color: #10b981;
+            --openai-color: #8b5cf6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+        }
+
+        header {
+            padding: 24px 40px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        main {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .input-section {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 16px;
+            color: var(--text-primary);
+            font-size: 16px;
+            line-height: 1.5;
+            resize: vertical;
+            min-height: 100px;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        button.primary-btn {
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button.primary-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        button.primary-btn:active {
+            transform: translateY(0);
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            flex: 1;
+        }
+
+        .model-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .model-panel:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .panel-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .model-name {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .gemini .indicator {
+            background: var(--gemini-color);
+            box-shadow: 0 0 10px var(--gemini-color);
+        }
+
+        .openai .indicator {
+            background: var(--openai-color);
+            box-shadow: 0 0 10px var(--openai-color);
+        }
+
+        .time-badge {
+            font-size: 13px;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .panel-content {
+            padding: 24px;
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .placeholder {
+            margin: auto;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            opacity: 0.5;
+        }
+
+        .result-box {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .final-answer {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        .gemini .final-answer { border-left-color: var(--gemini-color); }
+        .openai .final-answer { border-left-color: var(--openai-color); }
+
+        .tool-trace h4 {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .tool-call {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .tool-name {
+            color: #93c5fd;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .tool-args {
+            color: #a1a1aa;
+        }
+
+        /* Loading Animation */
+        .loader {
+            display: none;
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--accent-primary);
+            animation: spin 1s ease-in-out infinite;
+            margin: 40px auto;
+        }
+
+        .gemini .loader { border-top-color: var(--gemini-color); }
+        .openai .loader { border-top-color: var(--openai-color); }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">AI Arena ⚡️</div>
+        <div style="font-size: 14px; color: var(--text-secondary);">Day 04 Lab - Order Agent</div>
+    </header>
+
+    <main>
+        <div class="input-section">
+            <h2 style="font-size: 18px; font-weight: 500;">Nhập Prompt / Test Case</h2>
+            <textarea id="promptInput" placeholder="Ví dụ: Tạo giúp tôi đơn hàng cho Lê Minh Khôi, số điện thoại 0911222333, giao tới 45 Trần Phú, Đà Nẵng. Chọn 1 MacBook Air M3 13..."></textarea>
+            <div class="controls">
+                <div style="color: var(--text-secondary); font-size: 13px;">
+                    So sánh độ chính xác và chuỗi gọi hàm giữa 2 model
+                </div>
+                <button class="primary-btn" onclick="runComparison()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    Bắt đầu so sánh
+                </button>
+            </div>
+        </div>
+
+        <div class="comparison-grid">
+            <!-- Gemini Panel -->
+            <div class="model-panel gemini" id="panel-gemini">
+                <div class="panel-header">
+                    <div class="model-name">
+                        <div class="indicator"></div>
+                        Baseline (Simple Solution)
+                    </div>
+                    <div class="time-badge" id="time-gemini">-- ms</div>
+                </div>
+                <div class="panel-content">
+                    <div class="placeholder" id="placeholder-gemini">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 16 16 12 12 8"></polyline><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                        Chờ lệnh chạy...
+                    </div>
+                    <div class="loader" id="loader-gemini"></div>
+                    <div class="result-box" id="result-gemini">
+                        <div class="final-answer" id="answer-gemini"></div>
+                        <div class="tool-trace">
+                            <h4>Tool Trace</h4>
+                            <div id="tools-gemini"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OpenAI Panel -->
+            <div class="model-panel openai" id="panel-openai">
+                <div class="panel-header">
+                    <div class="model-name">
+                        <div class="indicator"></div>
+                        New Implementation (Src)
+                    </div>
+                    <div class="time-badge" id="time-openai">-- ms</div>
+                </div>
+                <div class="panel-content">
+                    <div class="placeholder" id="placeholder-openai">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 16 16 12 12 8"></polyline><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                        Chờ lệnh chạy...
+                    </div>
+                    <div class="loader" id="loader-openai"></div>
+                    <div class="result-box" id="result-openai">
+                        <div class="final-answer" id="answer-openai"></div>
+                        <div class="tool-trace">
+                            <h4>Tool Trace</h4>
+                            <div id="tools-openai"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Fake simulation logic to demonstrate the UI capabilities without a backend
+        // In a real application, this would make a POST request to a FastAPI backend running `run_agent`
+
+        function runComparison() {
+            const prompt = document.getElementById('promptInput').value.trim();
+            if (!prompt) {
+                alert("Vui lòng nhập prompt để so sánh!");
+                return;
+            }
+
+            // UI State Reset
+            ['gemini', 'openai'].forEach(model => {
+                document.getElementById(`placeholder-${model}`).style.display = 'none';
+                document.getElementById(`result-${model}`).style.display = 'none';
+                document.getElementById(`loader-${model}`).style.display = 'block';
+                document.getElementById(`time-${model}`).innerText = "Running...";
+            });
+
+            // Make actual API call to the backend
+            fetch('/api/compare', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    query: prompt,
+                    provider: 'openai' // or 'google', but the user wants to test openai
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                // gemini panel represents the baseline
+                renderResult('gemini', data.baseline);
+                
+                // openai panel represents the src (new implementation)
+                renderResult('openai', data.src);
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Lỗi khi kết nối tới Server. Hãy đảm bảo server.py đang chạy.");
+                ['gemini', 'openai'].forEach(model => {
+                    document.getElementById(`loader-${model}`).style.display = 'none';
+                    document.getElementById(`time-${model}`).innerText = "Error";
+                });
+            });
+        }
+
+        function renderResult(model, data) {
+            document.getElementById(`loader-${model}`).style.display = 'none';
+            document.getElementById(`time-${model}`).innerText = data.time || "-- s";
+            
+            // Highlight errors in red
+            const answerEl = document.getElementById(`answer-${model}`);
+            if (data.status === 'error') {
+                answerEl.style.color = '#ef4444';
+            } else {
+                answerEl.style.color = '';
+            }
+            answerEl.innerText = data.answer || "Không có phản hồi.";
+            
+            let toolsHtml = '';
+            data.tools.forEach(t => {
+                toolsHtml += `
+                    <div class="tool-call">
+                        <div class="tool-name">▶ ${t.name}</div>
+                        <div class="tool-args">${JSON.stringify(t.args)}</div>
+                    </div>
+                `;
+            });
+            document.getElementById(`tools-${model}`).innerHTML = toolsHtml;
+            document.getElementById(`result-${model}`).style.display = 'block';
+        }
+    </script>
+</body>
+</html>
